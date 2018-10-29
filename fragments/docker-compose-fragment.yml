@@ -1,0 +1,19 @@
+version: '2'
+services:
+  pdf-generation-api:
+    container_name: pdf-generation-api
+    build: /vagrant/apps/pdf-generation-api
+    restart: on-failure
+    ports:
+      - "9010:8080"
+    volumes:
+      - /vagrant/apps/pdf-generation-api:/src
+    logging:
+      driver: syslog
+      options:
+        syslog-format: "rfc5424"
+        syslog-address: "tcp://localhost:25826"
+        tag: "{{.Name}}"
+    depends_on:
+      - logstash
+

@@ -1,0 +1,67 @@
+<configuration>
+  <!-- This appender is for all log entries that were NOT logged with the AUDIT Marker -->
+  <appender name="NOTAUDIT" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+      <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+        <marker>AUDIT</marker>
+      </evaluator>
+      <onMatch>DENY</onMatch>
+    </filter>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+     <!-- Here we rename fields and make sure order/format match our required standard -->
+      <providers>
+        <timestamp>
+          <fieldName>timestamp</fieldName>
+          <!-- If the timestamp is not this exact format then elasticsearch blows up due to clash with other systems -->
+          <pattern>yyyy-MM-dd HH:mm:ss,SSS</pattern>
+        </timestamp>
+        <logLevel/>
+        <mdc>
+          <includeMdcKeyName>traceid</includeMdcKeyName>
+        </mdc>
+        <message/>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+        </stackTrace>
+      </providers>
+    </encoder>
+  </appender>
+  <!-- This appender is only for log entries that were logged with the AUDIT Marker -->
+  <appender name="AUDIT" class="ch.qos.logback.core.ConsoleAppender">
+    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+      <evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+        <marker>AUDIT</marker>
+      </evaluator>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <!-- Here we rename fields and make sure order/format match our required standard -->
+      <providers>
+        <timestamp>
+          <fieldName>timestamp</fieldName>
+          <!-- If the timestamp is not this exact format then elasticsearch blows up due to clash with other systems -->
+          <pattern>yyyy-MM-dd HH:mm:ss,SSS</pattern>
+        </timestamp>
+        <pattern>
+          <!-- Always audit regardless of real level -->
+          <pattern>
+            { "level": "AUDIT" }
+          </pattern>
+        </pattern>
+        <mdc>
+          <includeMdcKeyName>traceid</includeMdcKeyName>
+        </mdc>
+        <message/>
+      </providers>
+    </encoder>
+  </appender>
+
+  <!-- Switch jetty and hikari classes to >= info level messages only because they're total spammers -->
+  <logger name="org.eclipse.jetty" level="info" />
+  <logger name="com.zaxxer.hikari.pool.HikariPool" level="info" />
+
+  <root level="${LOG_LEVEL}">
+    <appender-ref ref="NOTAUDIT" />
+    <appender-ref ref="AUDIT" />
+  </root>
+</configuration>
